@@ -1,0 +1,57 @@
+
+logLevel: debug
+
+
+security:
+  v2c:
+    enabled: true
+    community: public
+  v3:
+    enabled: true
+    username: snmpuser
+    authProtocol: "SHA"
+    authPassword: "authpass"
+    privProtocol: "AES"
+    privPassword: "privpass"
+
+polling:
+  port: 1610
+  scalars:
+    - alias: "sysUpTime"
+      oid: "1.3.6.1.2.1.1.3.0"
+      type: "TIMETICKS"
+      value: 1234567
+    - alias: "sysName"
+      oid: "1.3.6.1.2.1.1.5.0"
+      type: "OCTET_STRING"
+      value: "test"
+    - alias: "sysObjectID"
+      oid: "1.3.6.1.2.1.1.2.0"
+      type: "OID"
+      value: "1.3.6.1.4.1.8072.3.2.10"
+  tables:
+    - name: "ifTable"
+      rootOID: "1.3.6.1.2.1.2.2"
+      columns:
+        1:
+          name: "ifIndex"
+          type: "INTEGER"
+          rows:
+            1: 1000
+            2: 1001
+        2:
+          name: "ifDescr"
+          type: "OCTET_STRING"
+          rows:
+            1: "eth0"
+            2: "eth1"
+        10:
+          name: "ifInOctets"
+          type: "INTEGER"
+          rows:
+            1: 102345
+            2: 54321
+
+trap:
+  targetHost: "127.0.0.1"
+  port: 1620
