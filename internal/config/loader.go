@@ -8,10 +8,16 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func Load(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+const (
+	defaultConfigFilePath     string = "config.yaml"
+	configFilePathEnvVariable string = "CONFIG_FILEPATH"
+)
+
+func Load() (*Config, error) {
+	configFilePath := getConfigFilePath()
+	data, err := os.ReadFile(getConfigFilePath())
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config %s: %v", path, err)
+		return nil, fmt.Errorf("failed to read config %s: %v", configFilePath, err)
 	}
 
 	var cfg Config
@@ -22,4 +28,12 @@ func Load(path string) (*Config, error) {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
 	return &cfg, nil
+}
+
+func getConfigFilePath() string {
+	configFilePath, isEnvSet := os.LookupEnv(configFilePathEnvVariable)
+	if isEnvSet {
+		return configFilePath
+	}
+	return configFilePathEnvVariable
 }
