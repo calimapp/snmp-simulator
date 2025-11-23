@@ -10,12 +10,27 @@ import (
 type Config struct {
 	Security Security      `yaml:"security"`
 	Polling  PollingConfig `yaml:"polling"`
+	Trap     TrapConfig    `yaml:"trap"`
 }
 
 type PollingConfig struct {
+	Enabled bool    `yaml:"enabled"`
 	Port    int     `yaml:"port"`
 	Scalars []OID   `yaml:"scalars"`
 	Tables  []Table `yaml:"tables"`
+}
+
+type TrapConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	TargetHost string `yaml:"targetHost"`
+	TargetPort int    `yaml:"targetPort"`
+	Traps      []Trap `yaml:"traps"`
+}
+
+type Trap struct {
+	Interval string `yaml:"interval"`
+	TrapOID  string `yaml:"trapOID"`
+	VarBinds []OID  `yaml:"varBinds"`
 }
 
 type Table struct {
@@ -30,7 +45,7 @@ func (t *Table) buildTablePDUs() []*GoSNMPServer.PDUValueControlItem {
 		for rowID, value := range column.Rows {
 			oid := fmt.Sprintf("%s.%d.%d", t.RootOID, columnID, rowID)
 			alias := fmt.Sprintf("%s.%s.%d", t.Name, column.Name, rowID)
-			pdus = append(pdus, buildPDU(oid, alias, column.Type, value))
+			pdus = append(pdus, buildGoSNMPServerPDU(oid, alias, column.Type, value))
 		}
 	}
 	return pdus
@@ -61,10 +76,10 @@ type OID struct {
 }
 
 func (oid *OID) toAgentPDU() *GoSNMPServer.PDUValueControlItem {
-	return buildPDU(oid.Oid, oid.Alias, oid.Type, oid.Value)
+	return buildGoSNMPServerPDU(oid.Oid, oid.Alias, oid.Type, oid.Value)
 }
 
-func buildPDU(oid string, alias string, typ string, value any) *GoSNMPServer.PDUValueControlItem {
+func buildGoSNMPServerPDU(oid string, alias string, typ string, value any) *GoSNMPServer.PDUValueControlItem {
 	pdu := &GoSNMPServer.PDUValueControlItem{
 		OID:      oid,
 		Document: alias,

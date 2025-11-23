@@ -9,7 +9,7 @@ import (
 	"github.com/slayercat/GoSNMPServer"
 )
 
-func NewAgent(cfg *config.Config) {
+func StartPollingSimulator(cfg *config.Config) {
 	master := GoSNMPServer.MasterAgent{
 		Logger: GoSNMPServer.NewDefaultLogger(),
 		SecurityConfig: GoSNMPServer.SecurityConfig{

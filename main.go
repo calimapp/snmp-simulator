@@ -1,8 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/calimapp/snmp-simulator/internal/config"
 	"github.com/calimapp/snmp-simulator/internal/snmp"
@@ -13,6 +15,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	fmt.Printf("=> %+v\n", cfg)
-	snmp.NewAgent(cfg)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	if cfg.Polling.Enabled {
+		go snmp.StartPollingSimulator(cfg)
+	}
+	if cfg.Trap.Enabled {
+		if err := snmp.StartTrapSimulator(cfg); err != nil {
+			log.Fatal(err)
+		}
+	}
+	<-stop
 }
