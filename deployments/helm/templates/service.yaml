@@ -1,15 +1,21 @@
+{{- range $i, $device := $.Values.devices }}
+{{ print "---" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "snmpsimulator.fullname" . }}
+  name: {{ $.Chart.Name }}-{{ $device.name }}-svc
+  namespace: {{ include "namespace" $ }}
   labels:
-    {{- include "snmpsimulator.labels" . | nindent 4 }}
+    {{- include "common.labels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
-      protocol: TCP
-      name: http
+    - port: {{ $device.polling.port }}
+      targetPort: snmp-get
+      protocol: UDP
+      name: snmp-get
   selector:
-    {{- include "snmpsimulator.selectorLabels" . | nindent 4 }}
+    {{- include "common.labels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
+{{- end }}

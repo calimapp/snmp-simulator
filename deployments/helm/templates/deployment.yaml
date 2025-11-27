@@ -1,50 +1,61 @@
+{{- range $i, $device := $.Values.devices }}
+{{ print "---" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name }}
+  name: {{ $.Chart.Name }}-{{ $device.name }}
+  namaspace: {{ include "namespace" $ }}
   labels:
-    {{- include "snmpsimulator.labels" . | nindent 4 }}
-    app.kubernetes.io/component: microservice
-    app.kubernetes.io/instance: {{ .Chart.Name }}
+    {{- include "common.labels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ $.Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Chart.Name }}
-      app.kubernetes.io/instance: {{ .Chart.Name }}
+      {{- include "common.labels" $ | nindent 6 }}
+      app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
   template:
     metadata:
       labels:
-        {{- include "snmpsimulator.labels" . | nindent 8 }}
-        app.kubernetes.io/component: microservice
-        app.kubernetes.io/instance: {{ .Chart.Name }}
+        {{- include "common.labels" $ | nindent 8 }}
+        app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+      {{- with $.Values.imagePullSecrets -}}
+      imagePullSecrets: {{ . }}
       {{- end }}
-      serviceAccountName: {{ include "snmpsimulator.serviceAccountName" . }}
+      serviceAccountName: {{ $.Values.serviceAccount.name }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ $.Chart.Name }}-{{ $device.name }}
+          {{- if $.Values.securityContext }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-          livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
-          readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.volumes }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: CONFIG_FILEPATH
+              value: "/app/config/config.yaml"
+          ports:
+            - name: snmpget
+              containerPort: {{ $device.polling.port }}
+              protocol: UDP
+          {{- with $.Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.livenessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $.Values.podResources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: config
+          configMap:
+            name: {{ $.Chart.Name }}-{{ $device.name }}-config
+{{- end }}

@@ -1,0 +1,20 @@
+{{- range $i, $device := $.Values.devices }}
+{{ print "---" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Chart.Name }}-{{ $device.name }}-config
+  namespace: {{ include "namespace" $ }}
+  labels:
+    {{- include "common.labels" $ | nindent 4 }}
+    app.kubernetes.io/instance: {{ $.Chart.Name }}-{{ $device.name }}
+data:
+  config.yaml: |
+    logLevel: {{ $.Values.logLevel }}
+    security:
+      {{- toYaml $device.security | nindent 6 }}
+    polling:
+      {{- toYaml $device.polling | nindent 6 }}
+    trap:
+      {{- toYaml $device.trap | nindent 6 }}
+{{- end -}}

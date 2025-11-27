@@ -1,5 +1,5 @@
 #
-name: Docker
+name: Release
 
 # Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
@@ -65,3 +65,39 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
       
+
+  push-helm-chart:
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.14.0' # Use a recent version supporting OCI
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: Package and Push Chart to GHCR
+        run: |
+          CHART_PATH=deployments/helm
+          CHART_VERSION=$(grep 'version:' $CHART_PATH/Chart.yaml | awk '{print $2}')
+          CHART_NAME=$(grep 'name:' $CHART_PATH/Chart.yaml | awk '{print $2}')
+          
+          # 1. Package the chart
+          helm package $CHART_PATH
+          
+          # 2. Push the packaged chart to the OCI registry
+          # The format is: oci://ghcr.io/<OWNER>/<REPO-NAME>/<CHART-NAME>
+          REGISTRY_URL="oci://ghcr.io/${{ github.repository_owner }}"
+
+          helm push snmp-simulator-$CHART_VERSION.tgz $REGISTRY_URL
